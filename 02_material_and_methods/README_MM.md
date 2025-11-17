@@ -1,10 +1,7 @@
 # GIN-TONIC structure is as follows, if needed: 
-01_administration_files  
-02_accepted_grants  
-03_meeting_minutes  
-04_related_literature  
-05_data_managemetn_plans  
-06_notebook  
+01_protocols  
+02_code 
+  
 
 # Content
 
