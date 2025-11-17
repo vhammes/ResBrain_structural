@@ -1,4 +1,4 @@
-GIN-TONIC structure is as follows, if needed: 
+# GIN-TONIC structure is as follows, if needed: 
 01_administration_files
 02_accepted_grants
 03_meeting_minutes
