@@ -27,8 +27,8 @@ ResBrain$Komorbid <- as.factor(ResBrain$Komorbid)
 
 # variable list
 vars <- c(
-  "Alter","Geschlecht","Diagnosis","residuals","cumulative_risk",
-  "BDI_Sum","HAMD_Sum17","Predicted","HAMD_Sum21","GAFscore",
+  "Alter","Geschlecht","Diagnosis","residuals_nested","cumulative_risk_nested_oos",
+  "BDI_Sum","HAMD_Sum17","Predicted_nested_oos","HAMD_Sum21","GAFscore",
   "Rem","Komorbid","DurDep","DepEp","Hosp","DurHosp",
   "RS25_Sum","TimeSinceTreat","medication","AgeOfOnset"
 )
@@ -140,8 +140,8 @@ ResBrain <- ResBrain %>%
   mutate(across(c(Geschlecht, Diagnosis, Rem, Komorbid, medication), as.factor))
 
 
-vars <- c("Alter","Geschlecht","Diagnosis","residuals","cumulative_risk",
-          "BDI_Sum","HAMD_Sum17","Predicted","HAMD_Sum21","GAFscore",
+vars <- c("Alter","Geschlecht","Diagnosis","residuals_nested","cumulative_risk_nested_oos",
+          "BDI_Sum","HAMD_Sum17","Predicted_nested_oos","HAMD_Sum21","GAFscore",
           "Rem","Komorbid","DurDep","DepEp","Hosp","DurHosp","RS25_Sum","TimeSinceTreat","medication",
           "AgeOfOnset")
 
@@ -172,6 +172,9 @@ out <- map_dfr(names(df), function(v) {
 #summary full sample mean values of outcome variables of interest
 out
 
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------- # 
 
 ##### MDD sample analyses #####
 # some clinical outcome variables are of interest only in the MDD subsample
@@ -216,13 +219,13 @@ out_dep
 ##### Extreme Group Comparisons #####
 ## Build one combined df with a clean 2-level group factor ##
 df_extreme_groups <- ResBrain %>%
-  dplyr::filter(Outlier_Below == TRUE | Outlier_Above == TRUE) %>%
+  dplyr::filter(Outlier_Below_nested == TRUE | Outlier_Above_nested == TRUE) %>%
   dplyr::mutate(
-    Mental_Health = dplyr::case_when(
-      Outlier_Below ~ "Resilience",
-      Outlier_Above ~ "Vulnerable"
+    Mental_Health_nested = dplyr::case_when(
+      Outlier_Below_nested ~ "Resilience",
+      Outlier_Above_nested ~ "Vulnerable"
     ),
-    Mental_Health = factor(Mental_Health, levels = c("Resilience","Vulnerable"))
+    Mental_Health_nested = factor(Mental_Health_nested, levels = c("Resilience","Vulnerable"))
   )
 
 ## Helpers ##
@@ -321,13 +324,13 @@ es_cat_multi <- function(x, g) {
 ## Build comparison table from the combined df ##
 out <- purrr::map_dfr(vars, function(v) {
   x <- df_extreme_groups[[v]]
-  g <- df_extreme_groups$Mental_Health
+  g <- df_extreme_groups$Mental_Health_nested
   
   if (is.numeric(x)) {
     # test
-    res <- test_numeric(stats::as.formula(paste0(v, " ~ Mental_Health")), data = df_extreme_groups)
+    res <- test_numeric(stats::as.formula(paste0(v, " ~ Mental_Health_nested")), data = df_extreme_groups)
     # effect size
-    es  <- es_cont(stats::as.formula(paste0(v, " ~ Mental_Health")), data = df_extreme_groups)
+    es  <- es_cont(stats::as.formula(paste0(v, " ~ Mental_Health_nested")), data = df_extreme_groups)
     
     tibble::tibble(
       Variable   = v,
@@ -342,7 +345,7 @@ out <- purrr::map_dfr(vars, function(v) {
     
   } else {
     # test (categorical)
-    res <- test_categorical(stats::as.formula(paste0(v, " ~ Mental_Health")), data = df_extreme_groups)
+    res <- test_categorical(stats::as.formula(paste0(v, " ~ Mental_Health_nested")), data = df_extreme_groups)
     
     # effect size decision (2x2 → OR; else → Cramér's V)
     lvls <- nlevels(droplevels(factor(x)))
@@ -379,26 +382,26 @@ out <- out %>%
 
 
 # Extreme group comparisons of variables of interest 
-out
+print(out, n = Inf, width = Inf)
 
 
 
 ## categorical variables adjustment / error debuggin ##
 # OR and Cramers v output is bugged in results table, is specifically printed here
 
-tab_sex <- table(df_extreme_groups$Mental_Health, df_extreme_groups$Geschlecht)
+tab_sex <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$Geschlecht)
 oddsratio(tab_sex, ci = 0.95)
 
-tab_diagnosis <- table(df_extreme_groups$Mental_Health, df_extreme_groups$Diagnosis)
+tab_diagnosis <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$Diagnosis)
 oddsratio(tab_diagnosis, ci = 0.95)
 
-tab_komorbid <- table(df_extreme_groups$Mental_Health, df_extreme_groups$Komorbid)
+tab_komorbid <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$Komorbid)
 oddsratio(tab_komorbid, ci = 0.95)
 
-tab_medication <- table(df_extreme_groups$Mental_Health, df_extreme_groups$medication)
+tab_medication <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$medication)
 oddsratio(tab_medication, ci = 0.95)
 
-tab_rem <- table(df_extreme_groups$Mental_Health, df_extreme_groups$Rem)
+tab_rem <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$Rem)
 tab_rem  # optional: inspect the table
 # Cramér's V with 95% CI
 v_rem <- cramers_v(tab_rem, ci = 0.95)
@@ -417,13 +420,13 @@ vars_dep <- c("Rem","Komorbid","DurDep","DepEp","Hosp","DurHosp",
 # Build one combined df with clean 2-level group factor, restricted to MDD
 df_extreme_groups_MDD <- ResBrain %>%
   dplyr::filter(Diagnosis == "MDD",
-                Outlier_Below == TRUE | Outlier_Above == TRUE) %>%
+                Outlier_Below_nested == TRUE | Outlier_Above_nested == TRUE) %>%
   dplyr::mutate(
-    Mental_Health = dplyr::case_when(
-      Outlier_Below ~ "Resilience",
-      Outlier_Above ~ "Vulnerable"
+    Mental_Health_nested = dplyr::case_when(
+      Outlier_Below_nested ~ "Resilience",
+      Outlier_Above_nested ~ "Vulnerable"
     ),
-    Mental_Health = factor(Mental_Health, levels = c("Resilience","Vulnerable"))
+    Mental_Health_nested = factor(Mental_Health_nested, levels = c("Resilience","Vulnerable"))
   )
 
 # Helpers (same style as good code)
@@ -513,11 +516,11 @@ es_cat_multi <- function(x, g) {
 # Build the MDD comparison table
 out_dep <- purrr::map_dfr(vars_dep, function(v) {
   x <- df_extreme_groups_MDD[[v]]
-  g <- df_extreme_groups_MDD$Mental_Health
+  g <- df_extreme_groups_MDD$Mental_Health_nested
   
   if (is.numeric(x)) {
     # test + ES via formula
-    fm <- stats::as.formula(paste0(v, " ~ Mental_Health"))
+    fm <- stats::as.formula(paste0(v, " ~ Mental_Health_nested"))
     res <- test_numeric(fm, data = df_extreme_groups_MDD)
     es  <- es_cont(fm, data = df_extreme_groups_MDD)
     
@@ -534,7 +537,7 @@ out_dep <- purrr::map_dfr(vars_dep, function(v) {
     
   } else {
     # categorical test + ES (OR for 2x2, V otherwise)
-    res  <- test_categorical(stats::as.formula(paste0(v, " ~ Mental_Health")),
+    res  <- test_categorical(stats::as.formula(paste0(v, " ~ Mental_Health_nested")),
                              data = df_extreme_groups_MDD)
     lvls <- nlevels(droplevels(factor(x)))
     if (lvls == 2) {
@@ -569,19 +572,36 @@ out_dep <- out_dep %>%
 # Extreme group comparisons of MDD-specific variables of interest 
 out_dep
 
+## categorical variables adjustment / error debuggin ##
+# OR and Cramers v output is bugged in results table, is specifically printed here
+
+tab_sex_MDD <- table(df_extreme_groups_MDD$Mental_Health_nested, df_extreme_groups_MDD$Geschlecht)
+oddsratio(tab_sex_MDD, ci = 0.95)
+
+tab_komorbid_MDD <- table(df_extreme_groups$Mental_Health_nested, df_extreme_groups$Komorbid)
+oddsratio(tab_komorbid_MDD, ci = 0.95)
+
+tab_medication_MDD <- table(df_extreme_groups_MDD$Mental_Health_nested, df_extreme_groups_MDD$medication)
+oddsratio(tab_medication_MDD, ci = 0.95)
+
+tab_rem_MDD <- table(df_extreme_groups_MDD$Mental_Health_nested, df_extreme_groups_MDD$Rem)
+tab_rem_MDD  # optional: inspect the table
+# Cramér's V with 95% CI
+v_rem_MDD <- cramers_v(tab_rem, ci = 0.95)
+v_rem_MDD
 
 # ----------------------------------------------------------------------------------------------------------------------------------------- # 
 
 
 #### Explorative Residual ~ Predictor Regression ####
-ResBrain$residuals <- as.vector(ResBrain$residuals)
+ResBrain$residuals_nested <- as.vector(ResBrain$residuals_nested)
 
 # Define the target variable
-target_var <- "residuals"
+target_var <- "residuals_nested"
 
 # Define the predictor variables
 predictors <- c(
-  "Alter", "cumulative_risk", 
+  "Alter", "cumulative_risk_nested_oos", 
   "CTQ_Sum", "ACE_Sum", "PSS_Sum", "LEQ_NegativeEventScore", "LEQ_PositiveEventScore", 
   "NEOFFI_Extraversion", "NEOFFI_Neurotizismus", "NEOFFI_Vertraeglichkeit", "NEOFFI_Offenheit", "NEOFFI_Gewissenhaftigkeit",
   "FSozU_Sum", "Bildungsjahre", "Haushaltsnetto", "IQ", "BDI_Sum", "HAMD_Sum17", "GAFscore",
@@ -616,27 +636,23 @@ for (i in seq_along(predictors)) {
 }
 
 
+# ----------------------------------------------------------------------------------------------------------------------------------------- # 
+
 #### Environment Cleaning ####
 
-# Cleanup: Remove temporary variables and objects
-rm(list = c("DemoData_vars", "idenifier_var", "MDD_DemoData_vars", 
-            "variables_of_interest_continuous", "variables_of_interest_dichotomous", 
-            "variables_of_interest_polytomous", "vars", "compute_posthoc_dichotomous",
-            "compute_posthoc_polytomous", "perform_anova_tukey", "as_expected_group", 
-            "data", "DemoData_MDD_ResBrain", "DemoData_ResBrain", "MDD_subset", 
-            "ResBrain_des","results_numeric", "correlation_matrix_T1", "df", "df_dep", 
-            "df_res", "df_res_dep", "df_vul", "df_vul_dep", "out", "out_dep", 
-            "ResBrain_corr", "ResBrain_extreme_groups", "ResBrain_MDD", 
-            "ResBrain_MRI_extreme_groups", "ResBrain_MRI_T1", "spearman_results_T1", 
-            "test", "X", "i", "new_order", "ordinal_vars", "var", "vars_dep", 
-            "is_cat", "p_cat", "p_num", "perform_group_tests", "summ_cat", 
-            "summ_num", "summarise_cat", "summarise_num", "tab", "tab_diagnosis", 
-            "tab_komorbid", "tab_medication", "tab_rem", "tab_sex", "es", "p", "p1", "p2", 
-            "v_rem",  "plot_list", "mu", "preds_to_show", "sigma", "target_var", 
-            "v", "vars_to_show", "es_cat_bin", "es_cat_multi", "es_cont", "fmt_mean_sd",
-            "fmt_median_iqr", "is_cont", "shapiro_ok", "test_categorical", "test_numeric",
-            "df_extreme_groups"))
+keep <- c(
+  "ResBrain",
+  "ResBrain_MRI_T1",
+  "ResBrain_MRI_extreme_groups_T1",
+  "ResBrain_extreme_groups",
+  "FOR2107_unfiltered", 
+  "dev_ratio_final_1se", 
+  "nested_r2", 
+  "nested_mse", 
+  "nested_rmse", 
+  "spearman_results_T1", 
+  "threshold_T1"
+)
 
-# Verify cleanup
-print(ls())  # List remaining objects in the environment
+rm(list = setdiff(ls(), keep))
 

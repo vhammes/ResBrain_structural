@@ -1,6 +1,6 @@
 #### Session and author information####
 # Function to generate project metadata
-generate_metadata <- function(author = "Vincent Hammes", project = "ResBrain_structural", date_last_modified = "14.11.2025") {
+generate_metadata <- function(author = "Vincent Hammes", project = "ResBrain_structural", date_last_modified = "09.06.2026") {
   metadata <- list(
     Author = author,
     Project = project,

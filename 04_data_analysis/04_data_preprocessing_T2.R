@@ -211,3 +211,4 @@ rm(list = c("T2_ResBrain_missing_data", "factor_vars", "relevant_vars",
 
 # Verify cleanup
 print(ls())  # List remaining objects in the environment
+

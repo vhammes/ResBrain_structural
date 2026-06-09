@@ -49,7 +49,7 @@ gmv_model_ROI <- lm(ROI_cluster_T2_base ~ ., data = ResBrain_All_T1_T2[, c("ROI_
 ResBrain_All_T1_T2$gmv_adj_ROI <- resid(gmv_model_ROI)
 
 # For Resilience
-res_model_ROI <- lm(residuals ~ ., data = ResBrain_All_T1_T2[, c("residuals", covars)])
+res_model_ROI <- lm(residuals_nested ~ ., data = ResBrain_All_T1_T2[, c("residuals_nested", covars)])
 ResBrain_All_T1_T2$res_adj_ROI <- resid(res_model_ROI)
 
 # 3. Check Assumption of Normality 
@@ -89,7 +89,7 @@ gmv_model_wb <- lm(wb_cluster_T2_base ~ ., data = ResBrain_All_T1_T2[, c("wb_clu
 ResBrain_All_T1_T2$gmv_adj_wb <- resid(gmv_model_wb)
 
 # For Resilience
-res_model_wb <- lm(residuals ~ ., data = ResBrain_All_T1_T2[, c("residuals", covars)])
+res_model_wb <- lm(residuals_nested ~ ., data = ResBrain_All_T1_T2[, c("residuals_nested", covars)])
 ResBrain_All_T1_T2$res_adj_wb <- resid(res_model_wb)
 
 # 3. Check Assumption of Normality 
@@ -172,7 +172,7 @@ ggsave(
 # T and df values are entered from SPM output
 
 # Effect Size T2 GMV Regression ROI #
-t <- 5.24
+t <- 5.19
 df <- 800
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
@@ -180,7 +180,7 @@ d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
 r_partial; R2_partial; d_equiv
 
 # Effect Size T2 GMV Regression whole-brain #
-t <- 5.28
+t <- 5.24
 df <- 800
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
@@ -188,7 +188,7 @@ d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
 r_partial; R2_partial; d_equiv
 
 # Effect Size T2 GMV Regression ROI cumulative risk #
-t <- 5.60
+t <- 5.36
 df <- 799
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
@@ -196,7 +196,7 @@ d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
 r_partial; R2_partial; d_equiv
 
 # Effect Size T2 GMV Regression ROI diagnosis #
-t <- 5.40
+t <- 5.58
 df <- 799
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
@@ -204,8 +204,17 @@ d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
 r_partial; R2_partial; d_equiv
 
 # Effect Size T2 GMV Regression ROI medication #
-t <- 5.85
+t <- 5.84
 df <- 799
+r_partial <- sqrt(t^2 / (t^2 + df))
+R2_partial <- (t^2 / (t^2 + df))
+d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
+r_partial; R2_partial; d_equiv
+
+
+# fill non-sig results accordingly
+t <- 4.23
+df <- 1796
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
 d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
@@ -257,15 +266,15 @@ ResBrain_violin$gmv_adj_wb <- resid(adj_model_group_wb)
 ##### Plotting #####
 
 # --- run adjusted test ---
-wilcox_test_adj_wb <- wilcox.test(gmv_adj_wb ~ Mental_Health, data = ResBrain_violin)
+wilcox_test_adj_wb <- wilcox.test(gmv_adj_wb ~ Mental_Health_nested, data = ResBrain_violin)
 p_label <- ifelse(
-  wilcox_test_adj$p.value < 0.05,
-  paste0("*p = ", format.pval(wilcox_test_adj$p.value, digits = 3, eps = 0.001)),
-  paste0("n.s. (p = ", format.pval(wilcox_test_adj$p.value, digits = 3, eps = 0.001), ")")
+  wilcox_test_adj_wb$p.value < 0.05,
+  paste0("*p = ", format.pval(wilcox_test_adj_wb$p.value, digits = 3, eps = 0.001)),
+  paste0("n.s. (p = ", format.pval(wilcox_test_adj_wb$p.value, digits = 3, eps = 0.001), ")")
 )
 print(wilcox_test_adj_wb)
 
-violin_wb <- ggplot(ResBrain_violin, aes(x = Mental_Health, y = gmv_adj_wb, fill = Mental_Health)) +
+violin_wb <- ggplot(ResBrain_violin, aes(x = Mental_Health_nested, y = gmv_adj_wb, fill = Mental_Health_nested)) +
   geom_violin(trim = FALSE, alpha = 0.6) +
   geom_boxplot(width = 0.15, outlier.shape = NA, alpha = 0.8, color = "black") +
   geom_jitter(width = 0.1, alpha = 0.5, color = "black", size = 1) +
@@ -301,8 +310,8 @@ ggsave(
 
 #### Effect Sizes Group Comparisons ####
 # Effect Size T2 GMV group comparison whole-brain #
-t <- 5.00
-df <- 184
+t <- 4.73
+df <- 185
 r_partial <- sqrt(t^2 / (t^2 + df))
 R2_partial <- (t^2 / (t^2 + df))
 d_equiv <- (2 * r_partial) / sqrt(1 - r_partial^2)
@@ -378,19 +387,20 @@ plots_ROI <- plot_data_ROI %>%
   group_by(variable) %>%
   group_split() %>%
   lapply(function(df) {
+    
+    # Spearman correlation
+    ct <- cor.test(df$value, df$gmv_adj_ROI, method = "spearman")
+    
+    label_text <- sprintf("r = %.2f, p = %.3f", ct$estimate, ct$p.value)
+    
     ggplot(df, aes(x = value, y = gmv_adj_ROI)) +
       geom_point(alpha = 0.7) +
       geom_smooth(method = "lm", se = TRUE, color = "black") +
-      stat_cor(
-        method = "spearman",
-        label.x.npc = "left",
-        label.y.npc = "top",
-        size = 4,
-        r.accuracy = 0.02,
-        p.accuracy = 0.001,
-        label.sep = ", ",
-        cor.coef.name = "r" 
-      ) +
+      annotate("text",
+               x = -Inf, y = Inf,
+               label = label_text,
+               hjust = -0.1, vjust = 2.1,
+               size = 4) +
       theme_classic(base_size = 14) +
       labs(
         x = unique(df$label),
@@ -435,19 +445,20 @@ plots_wb <- plot_data_wb %>%
   group_by(variable) %>%
   group_split() %>%
   lapply(function(df) {
+    
+    # Spearman correlation
+    ct <- cor.test(df$value, df$gmv_adj_wb, method = "spearman")
+    
+    label_text <- sprintf("r = %.2f, p = %.3f", ct$estimate, ct$p.value)
+    
     ggplot(df, aes(x = value, y = gmv_adj_wb)) +
       geom_point(alpha = 0.7) +
       geom_smooth(method = "lm", se = TRUE, color = "black") +
-      stat_cor(
-        method = "spearman",
-        label.x.npc = "left",
-        label.y.npc = "top",
-        size = 4,
-        r.accuracy = 0.02,
-        p.accuracy = 0.001,
-        label.sep = ", ",
-        cor.coef.name = "r" 
-      ) +
+      annotate("text",
+               x = -Inf, y = Inf,
+               label = label_text,
+               hjust = -0.1, vjust = 1.8,
+               size = 4) +
       theme_classic(base_size = 14) +
       labs(
         x = unique(df$label),
@@ -473,13 +484,29 @@ ggsave(
 
 #### Environment Cleaning ####
 
-# Cleanup: Remove temporary variables and objects
-rm(list = c("adj_model_group_wb", "Cluster_Values_GMV_T2", "gmv_adj_wb", "gmv_adj_ROI", "gmv_model_ROI", "gmv_model_wb", 
-            "Group_Cluster_Values_GMV_T2", "plot_data_ROI", "plot_data_wb", "plots_ROI", "plots_wb", 
-            "res_model_ROI", "res_model_wb", "ResBrain_violin", "wilcox_test_adj_wb", "clinical_vars", 
-            "covars", "final_plot_ROI", "final_plot_wb", "partial_plot_ROI", "partial_plot_wb", 
-            "violin_wb"
-))
+keep <- c(
+  "ResBrain",
+  "ResBrain_MRI_T1",
+  "ResBrain_MRI_extreme_groups_T1",
+  "ResBrain_extreme_groups",
+  "FOR2107_unfiltered", 
+  "dev_ratio_final_1se", 
+  "nested_r2", 
+  "nested_mse", 
+  "nested_rmse", 
+  "spearman_results_T1", 
+  "ResBrain_All_T1_T2", 
+  "ResBrain_extreme_groups_T2", 
+  "ResBrain_MRI_T2", 
+  "T2_FOR2107_unfiltered", 
+  "dev_ratio_final_1se_T2",
+  "nested_r2_T2", 
+  "nested_mse_T2", 
+  "nested_rmse_T2",
+  "threshold_T1",
+  "threshold_T2"
+)
 
-# Verify cleanup
-print(ls())  # List remaining objects in the environment
+rm(list = setdiff(ls(), keep))
+
+
