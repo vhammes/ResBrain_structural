@@ -1,4 +1,4 @@
-# ResBrain_structural
-ResBrain_structural - Analysis code.  This repository accompanies the manuscript: Hammes et al., "Beyond Diagnosis: A Prospective, Better-Than-Expected Approach to the Neural Correlates of Resilience" (in preparation, last updated 17.11.2025). For questions, contact Vincent Hammes; vincent.hammes@uni-marburg.de
+# ResBrain\_structural
 
-latest release (17.11.2025): 10.5281/zenodo.17630005
+ResBrain\_structural - Analysis code.  This repository accompanies the manuscript: Hammes et al., "Resilience Beyond Diagnosis: Prospective Neural Correlates of Better-Than-Expected Outcomes in Depression" (in preparation, last updated 09.06.2026). For questions, contact Vincent Hammes; vincent.hammes@uni-marburg.de
+
